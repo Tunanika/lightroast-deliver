@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
+import { timingSafeEqual } from "node:crypto";
 import { env } from "@/lib/env";
 import { signAdminToken, ADMIN_COOKIE, adminCookieOptions } from "@/lib/auth";
 import { rateLimit } from "@/lib/ratelimit";
 import { getClientIp } from "@/lib/client-ip";
 
 export const runtime = "nodejs";
+
+// Constant-time string comparison (avoids a timing oracle on credentials).
+function safeEqual(a: string, b: string): boolean {
+  const ab = Buffer.from(a, "utf8");
+  const bb = Buffer.from(b, "utf8");
+  if (ab.length !== bb.length) return false;
+  return timingSafeEqual(ab, bb);
+}
 
 export async function POST(req: NextRequest) {
   const ip = getClientIp(req.headers);
@@ -27,8 +36,8 @@ export async function POST(req: NextRequest) {
   const valid =
     !!username &&
     !!password &&
-    username === env.adminUsername &&
-    password === env.adminPassword;
+    safeEqual(username, env.adminUsername) &&
+    safeEqual(password, env.adminPassword);
 
   if (!valid) {
     return NextResponse.json(

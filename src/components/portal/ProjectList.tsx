@@ -58,16 +58,28 @@ function ProjectRow({
 
   return (
     <div className="border-b border-border last:border-b-0">
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between gap-4 py-5 text-left"
-        aria-expanded={open}
-      >
-        <span className="text-lg tracking-heading text-fg">{project.name}</span>
-        <span className="slug shrink-0">
-          {count} {count === 1 ? "file" : "files"} · {open ? "−" : "+"}
-        </span>
-      </button>
+      <div className="flex items-center gap-4 py-5">
+        <button
+          onClick={() => setOpen((o) => !o)}
+          className="flex min-w-0 flex-1 items-center justify-between gap-4 text-left"
+          aria-expanded={open}
+        >
+          <span className="truncate text-lg tracking-heading text-fg">
+            {project.name}
+          </span>
+          <span className="slug shrink-0">
+            {count} {count === 1 ? "file" : "files"} · {open ? "−" : "+"}
+          </span>
+        </button>
+        {count > 0 ? (
+          <a
+            href={`/api/download/project/${project.id}?portal=${encodeURIComponent(slug)}`}
+            className="inline-flex h-8 shrink-0 items-center border border-border-strong px-3 text-xs tracking-heading text-fg transition-colors hover:bg-bg-soft"
+          >
+            Download all
+          </a>
+        ) : null}
+      </div>
       {open ? (
         <ul className="animate-fade-up pb-3">
           {project.files.map((file) => (

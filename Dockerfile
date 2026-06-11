@@ -1,34 +1,38 @@
 # syntax=docker/dockerfile:1
 
 # ---- base ----
+# Node provides the proven runtime for Next standalone + Prisma; bun is the
+# package manager / script runner. Both are musl (Alpine) compatible.
 FROM node:20-alpine AS base
-# libc6-compat + openssl are required by Prisma engines on Alpine (musl).
 RUN apk add --no-cache libc6-compat openssl
+COPY --from=oven/bun:1-alpine /usr/local/bin/bun /usr/local/bin/bun
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # ---- deps ----
 FROM base AS deps
-COPY package.json package-lock.json* ./
+COPY package.json bun.lock ./
 # Schema is needed because the postinstall script runs `prisma generate`.
 COPY prisma ./prisma
-RUN npm ci
+RUN bun install --frozen-lockfile
 
 # ---- builder ----
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-# `npm run build` runs `prisma generate && next build`.
-RUN npm run build
+# `bun run build` runs `prisma generate && next build`.
+RUN bun run build
 
 # ---- migrator ----
 # A minimal, isolated Prisma CLI (+ musl engines) used only for `migrate deploy`
-# at startup. Kept separate from the app so the lean standalone image isn't
-# bloated by re-shipping next/react/swc.
+# at startup, so the lean standalone image isn't bloated by re-shipping deps.
 FROM base AS migrator
 WORKDIR /m
-RUN npm init -y >/dev/null \
-  && npm install prisma@6.19.3 --no-audit --no-fund
+# trustedDependencies makes bun run the engine-download postinstall; the final
+# check fails the build early if the musl schema-engine isn't present.
+RUN printf '{"name":"m","version":"1.0.0","trustedDependencies":["prisma","@prisma/engines","@prisma/client"]}' > package.json \
+  && bun add prisma@6.19.3 \
+  && ls node_modules/@prisma/engines/*schema-engine* >/dev/null
 
 # ---- runner ----
 FROM base AS runner

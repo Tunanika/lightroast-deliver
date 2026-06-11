@@ -134,6 +134,7 @@ export async function GET(
     "Accept-Ranges": "bytes",
     "Content-Disposition": contentDisposition(file.name),
     "Cache-Control": "private, no-store",
+    "X-Content-Type-Options": "nosniff",
   });
   if (status === 206) {
     headers.set("Content-Range", `bytes ${start}-${end}/${totalSize}`);

@@ -2,12 +2,18 @@ services:
   app:
     build: .
     restart: unless-stopped
+    # cloudflared reaches the app internally as http://app:3000.
+    expose:
+      - "3000"
+    # Optional LAN access. Note: with COOKIE_SECURE=true (the tunnel default)
+    # admin login only works over HTTPS, so use the tunnel domain to sign in.
     ports:
       - "3000:3000"
     environment:
       - ADMIN_USERNAME=${ADMIN_USERNAME}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
       - JWT_SECRET=${JWT_SECRET}
+      - COOKIE_SECURE=${COOKIE_SECURE:-true}
       - NAS_MOUNT_PATH=/mnt/nas
       - DATABASE_URL=file:/data/db.sqlite
     volumes:
@@ -19,3 +25,16 @@ services:
       # admin file paths resolve under /mnt/nas inside the container.
       - /path/to/nas/media:/mnt/nas:ro
     # user: "1000:1000"   # uncomment + set to your NAS uid:gid if ./data writes fail
+
+  # Cloudflare Tunnel — publishes the app at deliver.lightroast.studio with no
+  # inbound ports opened on the NAS. Create the tunnel + public hostname in the
+  # Cloudflare Zero Trust dashboard (service: http://app:3000) and paste the
+  # tunnel token into .env as TUNNEL_TOKEN. See the README.
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+    depends_on:
+      - app

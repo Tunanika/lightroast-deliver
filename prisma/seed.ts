@@ -32,6 +32,12 @@ function ensureSampleFile(relPath: string, sizeBytes: number): string {
 async function main() {
   console.log(`Seeding demo data (NAS mount: ${NAS})...`);
 
+  // Idempotent: clear the demo clients first (cascades to projects/files/events)
+  // so re-running the seed always yields the same clean state.
+  await prisma.client.deleteMany({
+    where: { slug: { in: ["haven-documentary", "acme-brand"] } },
+  });
+
   // Two sample files (~2 MB each) under the mount.
   const havenPath = ensureSampleFile("haven/export/haven_v3.mp4", 2 * 1024 * 1024);
   const acmePath = ensureSampleFile("acme/brand_film_v2.mp4", 2 * 1024 * 1024);

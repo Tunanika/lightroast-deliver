@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import path from "node:path";
 import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/session";
-import { resolveNasPath } from "@/lib/paths";
+import { resolveNasPath, collectFolderFiles, pathKind } from "@/lib/paths";
 
 export const runtime = "nodejs";
 
@@ -35,26 +35,73 @@ export async function POST(
     );
   }
 
-  // Validate the path exists, is a file, and stays inside the NAS mount.
-  const resolved = resolveNasPath(inputPath);
-  if (!resolved.ok) {
-    return NextResponse.json({ error: resolved.error }, { status: 400 });
+  const kind = pathKind(inputPath);
+
+  // --- Folder import: add every file inside (recursively). ---
+  if (kind.kind === "dir") {
+    const folder = collectFolderFiles(inputPath);
+    if (!folder.ok) {
+      return NextResponse.json({ error: folder.error }, { status: 400 });
+    }
+
+    // Skip files already referenced in this project (idempotent re-import).
+    const existing = new Set(
+      (
+        await prisma.file.findMany({
+          where: { projectId },
+          select: { path: true },
+        })
+      ).map((f) => f.path),
+    );
+    const toCreate = folder.files.filter((f) => !existing.has(f.absolutePath));
+
+    if (toCreate.length > 0) {
+      await prisma.file.createMany({
+        data: toCreate.map((f) => ({
+          name: f.relativeName,
+          path: f.absolutePath,
+          size: f.size,
+          mimeType: f.mimeType,
+          projectId,
+        })),
+      });
+    }
+
+    return NextResponse.json(
+      {
+        added: toCreate.length,
+        skipped: folder.files.length - toCreate.length,
+      },
+      { status: 201 },
+    );
   }
 
-  const displayName = body.name?.trim() || path.basename(resolved.file.absolutePath);
+  // --- Single file. ---
+  if (kind.kind === "file") {
+    const resolved = resolveNasPath(inputPath);
+    if (!resolved.ok) {
+      return NextResponse.json({ error: resolved.error }, { status: 400 });
+    }
+    const displayName =
+      body.name?.trim() || path.basename(resolved.file.absolutePath);
 
-  const file = await prisma.file.create({
-    data: {
-      name: displayName,
-      path: resolved.file.absolutePath,
-      size: resolved.file.size,
-      mimeType: resolved.file.mimeType,
-      projectId,
-    },
-  });
+    const file = await prisma.file.create({
+      data: {
+        name: displayName,
+        path: resolved.file.absolutePath,
+        size: resolved.file.size,
+        mimeType: resolved.file.mimeType,
+        projectId,
+      },
+    });
+    return NextResponse.json(
+      { added: 1, id: file.id, resolvedPath: resolved.file.absolutePath },
+      { status: 201 },
+    );
+  }
 
   return NextResponse.json(
-    { id: file.id, resolvedPath: resolved.file.absolutePath },
-    { status: 201 },
+    { error: kind.error ?? "Invalid path." },
+    { status: 400 },
   );
 }
