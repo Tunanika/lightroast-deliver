@@ -21,6 +21,8 @@
   --border-strong: #3a3a3a;
   --accent: #455362;
   --accent-fg: #ffffff;
+  --danger: #ef5a5f;
+  --danger-fg: #ffffff;
   color-scheme: dark;
 }
 
@@ -35,6 +37,8 @@
   --border-strong: #d2d0ca;
   --accent: #455362;
   --accent-fg: #ffffff;
+  --danger: #d13438;
+  --danger-fg: #ffffff;
   color-scheme: light;
 }
 

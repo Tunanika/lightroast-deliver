@@ -169,14 +169,14 @@ TUNNEL_TOKEN=eyJhIjoi...your-cloudflare-tunnel-token...   # only if using the tu
 ## Deploy from a container registry (build → push → pull)
 
 The UGreen DXP4800+ is **x86_64**, so if you build on an Apple-Silicon Mac you must cross-build for
-`linux/amd64`. Example with GitHub Container Registry (`ghcr.io`):
+`linux/amd64`. Example with Docker Hub (plays nicest with UGOS's Docker app):
 
 ```bash
-# 1) On your machine — cross-build for the NAS and push (USER = your GitHub username)
-docker login ghcr.io                      # use a GitHub PAT with write:packages
+# 1) On your machine — cross-build for the NAS and push (USER = your Docker Hub username)
+docker login
 docker buildx build --platform linux/amd64 \
-  -t ghcr.io/USER/lightroast-deliver:1.0.0 \
-  -t ghcr.io/USER/lightroast-deliver:latest \
+  -t USER/lightroast-deliver:1.0.0 \
+  -t USER/lightroast-deliver:latest \
   --push .
 ```
 
@@ -186,7 +186,7 @@ On the NAS, use an image-based compose instead of building locally — same as
 ```yaml
 services:
   app:
-    image: ghcr.io/USER/lightroast-deliver:latest   # was: build: .
+    image: USER/lightroast-deliver:latest   # was: build: .
     restart: unless-stopped
     expose: ["3000"]
     ports: ["3000:3000"]

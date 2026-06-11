@@ -17,7 +17,7 @@ const buttonVariants: Record<Variant, string> = {
   outline: "border border-border-strong text-fg hover:bg-bg-soft",
   ghost: "text-fg-muted hover:text-fg",
   danger:
-    "border border-border-strong text-fg-muted hover:text-fg hover:border-fg",
+    "border border-danger text-danger hover:bg-danger hover:text-danger-fg",
 };
 
 export function Button({

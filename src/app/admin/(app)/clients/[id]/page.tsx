@@ -47,7 +47,7 @@ export default async function ClientDetailPage({
           <>
             <CopyButton path={portalPath} />
             <a href={portalPath} target="_blank" rel="noreferrer">
-              <Button variant="ghost">Open portal,</Button>
+              <Button variant="ghost">Open portal</Button>
             </a>
           </>
         }

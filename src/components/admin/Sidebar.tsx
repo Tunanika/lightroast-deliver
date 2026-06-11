@@ -44,7 +44,7 @@ export function Sidebar() {
                   : "border-transparent text-fg-muted hover:text-fg"
               }`}
             >
-              {item.label},
+              {item.label}
             </Link>
           );
         })}
@@ -55,7 +55,7 @@ export function Sidebar() {
           onClick={logout}
           className="py-2 pl-3 text-sm tracking-heading text-fg-muted transition-colors hover:text-fg"
         >
-          Sign out,
+          Sign out
         </button>
       </div>
     </aside>

@@ -16,6 +16,8 @@ const config: Config = {
         "border-strong": "var(--border-strong)",
         accent: "var(--accent)",
         "accent-fg": "var(--accent-fg)",
+        danger: "var(--danger)",
+        "danger-fg": "var(--danger-fg)",
         // Fixed brand tokens.
         ink: "#0A0A0A",
         paper: "#FFFFFF",
