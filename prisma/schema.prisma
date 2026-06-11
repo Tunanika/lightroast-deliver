@@ -18,6 +18,9 @@ model Client {
   slug      String   @unique
   // bcrypt hash, optional — a portal can be open or password-protected.
   password  String?
+  // When false, the portal is fully unavailable: no viewing, unlocking, or
+  // downloading, regardless of password state.
+  accessEnabled Boolean @default(true)
   createdAt DateTime @default(now())
 
   projects Project[]

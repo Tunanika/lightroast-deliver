@@ -42,6 +42,14 @@ export async function POST(
     return NextResponse.json({ error: "Portal not found." }, { status: 404 });
   }
 
+  // Disabled portals can't be unlocked or accessed at all.
+  if (!client.accessEnabled) {
+    return NextResponse.json(
+      { error: "This portal is unavailable." },
+      { status: 403 },
+    );
+  }
+
   // Open portal — nothing to unlock.
   if (!client.password) {
     return NextResponse.json({ ok: true });
@@ -53,7 +61,7 @@ export async function POST(
     return NextResponse.json({ error: "Incorrect password." }, { status: 401 });
   }
 
-  const token = await signPortalToken(slug);
+  const token = await signPortalToken(slug, client.password);
   const res = NextResponse.json({ ok: true });
   res.cookies.set(portalCookieName(slug), token, portalCookieOptions);
   return res;

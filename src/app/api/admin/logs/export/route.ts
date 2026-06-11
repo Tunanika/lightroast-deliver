@@ -7,7 +7,9 @@ import { formatIsoSeconds } from "@/lib/format";
 export const runtime = "nodejs";
 
 function csvCell(value: string): string {
-  return `"${(value ?? "").replace(/"/g, '""')}"`;
+  let v = value ?? "";
+  if (/^[=+\-@\t\r]/.test(v)) v = `'${v}`;
+  return `"${v.replace(/"/g, '""')}"`;
 }
 
 export async function GET(req: NextRequest) {

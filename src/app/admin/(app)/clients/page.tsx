@@ -43,6 +43,7 @@ export default async function ClientsPage() {
             <THead>
               <Th>Name</Th>
               <Th>Portal</Th>
+              <Th>Privacy</Th>
               <Th>Access</Th>
               <Th className="text-right">Projects</Th>
               <Th className="text-right">Files</Th>
@@ -68,6 +69,11 @@ export default async function ClientsPage() {
                     <Td className="font-mono text-fg-muted">/c/{client.slug}</Td>
                     <Td className="slug">
                       {client.password ? "Protected" : "Open"}
+                    </Td>
+                    <Td className="slug">
+                      <span className={client.accessEnabled ? "" : "text-fg"}>
+                        {client.accessEnabled ? "Enabled" : "Disabled"}
+                      </span>
                     </Td>
                     <Td className="text-right font-mono text-fg-muted">
                       {client._count.projects}

@@ -31,7 +31,26 @@ export default async function PortalPage({
   const surface =
     store.get("portal-surface")?.value === "paper" ? "paper" : "ink";
 
-  const locked = !!client.password && !(await isPortalUnlocked(slug));
+  // Disabled portals show an unavailable notice instead of any files.
+  if (!client.accessEnabled) {
+    return (
+      <PortalShell initialSurface={surface}>
+        <div className="mx-auto max-w-sm py-12 text-center">
+          <span className="slug">(LR.s — Unavailable)</span>
+          <h1 className="mt-6 text-3xl font-medium tracking-display">
+            {client.name}
+          </h1>
+          <p className="mt-3 text-fg-muted">
+            This delivery is currently unavailable. Please contact us if you
+            need access.
+          </p>
+        </div>
+      </PortalShell>
+    );
+  }
+
+  const locked =
+    !!client.password && !(await isPortalUnlocked(slug, client.password));
   if (locked) {
     return (
       <PortalShell initialSurface={surface}>
