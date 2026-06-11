@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { EditClientForm } from "@/components/admin/EditClientForm";
 import { NewProjectForm } from "@/components/admin/NewProjectForm";
+import { RenameProject } from "@/components/admin/RenameProject";
 import { CopyButton } from "@/components/admin/CopyButton";
 import { ConfirmDelete } from "@/components/admin/ConfirmDelete";
 import { Button, Panel, EmptyState } from "@/components/ui";
@@ -102,12 +103,18 @@ export default async function ClientDetailPage({
                       {formatDate(project.createdAt)}
                     </Td>
                     <Td className="text-right">
-                      <ConfirmDelete
-                        endpoint={`/api/admin/projects/${project.id}`}
-                        heading="Delete project"
-                        body="Removes this project and its files (the DB references only — NAS files are untouched)."
-                        label="Delete"
-                      />
+                      <div className="flex justify-end gap-2">
+                        <RenameProject
+                          projectId={project.id}
+                          currentName={project.name}
+                        />
+                        <ConfirmDelete
+                          endpoint={`/api/admin/projects/${project.id}`}
+                          heading="Delete project"
+                          body="Removes this project and its files (the DB references only — NAS files are untouched)."
+                          label="Delete"
+                        />
+                      </div>
                     </Td>
                   </Tr>
                 ))}

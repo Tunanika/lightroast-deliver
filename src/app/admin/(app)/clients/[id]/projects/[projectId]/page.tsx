@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { env } from "@/lib/env";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { AddFileForm } from "@/components/admin/AddFileForm";
+import { RenameProject } from "@/components/admin/RenameProject";
 import { ConfirmDelete } from "@/components/admin/ConfirmDelete";
 import { EmptyState } from "@/components/ui";
 import { Table, THead, Th, Tr, Td } from "@/components/admin/Table";
@@ -44,6 +45,10 @@ export default async function ProjectDetailPage({
         actions={
           <>
             <AddFileForm projectId={project.id} mountPath={env.nasMountPath} />
+            <RenameProject
+              projectId={project.id}
+              currentName={project.name}
+            />
             <ConfirmDelete
               endpoint={`/api/admin/projects/${project.id}`}
               heading="Delete project"
