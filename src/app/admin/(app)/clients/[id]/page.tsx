@@ -63,6 +63,7 @@ export default async function ClientDetailPage({
               name: client.name,
               slug: client.slug,
               hasPassword: !!client.password,
+              accessEnabled: client.accessEnabled,
             }}
           />
         </section>

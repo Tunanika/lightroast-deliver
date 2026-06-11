@@ -25,6 +25,7 @@ export async function PATCH(
     slug?: string;
     // string = set new password; null = remove protection; undefined = leave.
     password?: string | null;
+    accessEnabled?: boolean;
   };
   try {
     body = await req.json();
@@ -36,7 +37,12 @@ export async function PATCH(
     name?: string;
     slug?: string;
     password?: string | null;
+    accessEnabled?: boolean;
   } = {};
+
+  if (body.accessEnabled !== undefined) {
+    data.accessEnabled = !!body.accessEnabled;
+  }
 
   if (body.name !== undefined) {
     const name = body.name.trim();

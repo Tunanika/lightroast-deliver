@@ -33,8 +33,13 @@ export async function GET(
   // Cross-portal guard: the project must belong to the requesting portal.
   if (client.slug !== portal) return new Response("Not found.", { status: 404 });
 
+  // Disabled portals serve nothing.
+  if (!client.accessEnabled) {
+    return new Response("This portal is unavailable.", { status: 403 });
+  }
+
   // Password-protected portals require a valid unlock session.
-  if (client.password && !(await isPortalUnlocked(client.slug))) {
+  if (client.password && !(await isPortalUnlocked(client.slug, client.password))) {
     return new Response("This portal is locked.", { status: 403 });
   }
 

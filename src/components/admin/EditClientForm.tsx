@@ -8,15 +8,43 @@ import { slugify } from "@/lib/slug";
 export function EditClientForm({
   client,
 }: {
-  client: { id: string; name: string; slug: string; hasPassword: boolean };
+  client: {
+    id: string;
+    name: string;
+    slug: string;
+    hasPassword: boolean;
+    accessEnabled: boolean;
+  };
 }) {
   const router = useRouter();
   const [name, setName] = useState(client.name);
   const [slug, setSlug] = useState(client.slug);
   const [password, setPassword] = useState("");
+  const [accessEnabled, setAccessEnabled] = useState(client.accessEnabled);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  async function toggleAccess() {
+    const next = !accessEnabled;
+    setBusy(true);
+    setError(null);
+    setMessage(null);
+    const res = await fetch(`/api/admin/clients/${client.id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ accessEnabled: next }),
+    });
+    if (res.ok) {
+      setAccessEnabled(next);
+      setMessage(next ? "Access enabled." : "Access disabled.");
+      router.refresh();
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setError(data.error || "Could not save.");
+    }
+    setBusy(false);
+  }
 
   async function patch(payload: Record<string, unknown>, okMessage: string) {
     setBusy(true);
@@ -95,6 +123,30 @@ export function EditClientForm({
             Remove password
           </Button>
         ) : null}
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+        <div className="min-w-0">
+          <p className="text-fg">
+            Portal access ·{" "}
+            <span className={accessEnabled ? "text-fg-muted" : "text-fg"}>
+              {accessEnabled ? "Enabled" : "Disabled"}
+            </span>
+          </p>
+          <p className="mt-1 text-sm text-fg-muted">
+            {accessEnabled
+              ? "The client can open the portal and download files."
+              : "The portal is unavailable — no viewing or downloading."}
+          </p>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={busy}
+          onClick={toggleAccess}
+        >
+          {accessEnabled ? "Disable access" : "Enable access"}
+        </Button>
       </div>
     </form>
   );
