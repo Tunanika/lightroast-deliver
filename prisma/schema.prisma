@@ -1,0 +1,68 @@
+// LightRoast Deliver — data layer.
+// SQLite, file-based, persisted on the ./data Docker volume.
+
+generator client {
+  provider      = "prisma-client-js"
+  // native = local dev; linux-musl-openssl-3.0.x = Alpine container runtime.
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Client {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  // bcrypt hash, optional — a portal can be open or password-protected.
+  password  String?
+  createdAt DateTime @default(now())
+
+  projects Project[]
+
+  @@index([createdAt])
+}
+
+model Project {
+  id        String   @id @default(cuid())
+  name      String
+  clientId  String
+  createdAt DateTime @default(now())
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  files  File[]
+
+  @@index([clientId])
+}
+
+model File {
+  id        String   @id @default(cuid())
+  name      String // display name
+  path      String // absolute path on the mounted filesystem
+  size      BigInt // bytes
+  mimeType  String
+  projectId String
+  createdAt DateTime @default(now())
+
+  project   Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  downloads DownloadEvent[]
+
+  @@index([projectId])
+}
+
+model DownloadEvent {
+  id           String   @id @default(cuid())
+  fileId       String
+  clientSlug   String // which portal triggered the download
+  ip           String
+  userAgent    String
+  downloadedAt DateTime @default(now())
+
+  file File @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@index([fileId])
+  @@index([clientSlug])
+  @@index([downloadedAt])
+}

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" fill="#0a0a0a" />
+  <text x="32" y="31" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-weight="700" font-size="24" letter-spacing="-1.5" fill="#ffffff">LR</text>
+  <text x="32" y="49" text-anchor="middle" font-family="ui-monospace, monospace" font-size="12" letter-spacing="1" fill="#ffffff">.s</text>
+</svg>

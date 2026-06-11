@@ -1,0 +1,97 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  LightRoast Deliver — surfaces.
+  Monochrome end to end. Two surfaces: ink (near-black) and paper (white),
+  plus a greyscale ramp for borders, dividers, and secondary text.
+  A single restrained accent (Slate) for primary actions and focus.
+  Default surface is ink (admin shell + portal default).
+*/
+:root,
+[data-surface="ink"] {
+  --bg: #0a0a0a;
+  --bg-soft: #141414;
+  --bg-elevated: #1a1a1a;
+  --fg: #ffffff;
+  --fg-muted: #8a8a8a;
+  --fg-subtle: #5a5a5a;
+  --border: #262626;
+  --border-strong: #3a3a3a;
+  --accent: #455362;
+  --accent-fg: #ffffff;
+  color-scheme: dark;
+}
+
+[data-surface="paper"] {
+  --bg: #ffffff;
+  --bg-soft: #f5f4f1;
+  --bg-elevated: #ffffff;
+  --fg: #000000;
+  --fg-muted: #6b6b6b;
+  --fg-subtle: #9a9a9a;
+  --border: #e5e4e0;
+  --border-strong: #d2d0ca;
+  --accent: #455362;
+  --accent-fg: #ffffff;
+  color-scheme: light;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  html,
+  body {
+    background: var(--bg);
+    color: var(--fg);
+  }
+
+  body {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background: var(--fg);
+    color: var(--bg);
+  }
+
+  /* Focus: a quiet accent ring, never a glow. */
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* Respect reduced motion — the brand's motion is gentle by default. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* Editorial slug — Geist Mono, uppercase, widely tracked. (LR.s — 01) */
+  .slug {
+    font-family: var(--font-mono), ui-monospace, monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    color: var(--fg-muted);
+  }
+
+  /* Slow, linear marquee for section labels that drift between blocks. */
+  .marquee-track {
+    display: inline-flex;
+    white-space: nowrap;
+    will-change: transform;
+  }
+}
