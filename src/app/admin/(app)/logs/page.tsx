@@ -44,7 +44,7 @@ export default async function LogsPage({
     <>
       <PageHeader
         slug={`(LR.s — Logs · ${events.length})`}
-        title="Download log."
+        title="Activity log."
       />
 
       <div className="space-y-6 p-8">
@@ -67,6 +67,7 @@ export default async function LogsPage({
             <THead>
               <Th>When</Th>
               <Th>File</Th>
+              <Th>Type</Th>
               <Th>Project</Th>
               <Th>Client</Th>
               <Th>Portal</Th>
@@ -80,6 +81,7 @@ export default async function LogsPage({
                     {formatDateTime(event.downloadedAt)}
                   </Td>
                   <Td className="text-fg">{event.file.name}</Td>
+                  <Td className="font-mono text-fg-muted">{event.kind}</Td>
                   <Td className="text-fg-muted">{event.file.project.name}</Td>
                   <Td className="text-fg-muted">
                     {event.file.project.client.name}

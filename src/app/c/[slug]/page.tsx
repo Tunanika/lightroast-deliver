@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { isPortalUnlocked } from "@/lib/portal-session";
 import { formatBytes } from "@/lib/format";
+import { previewKind, isNativeImage } from "@/lib/preview";
 import { PortalShell } from "@/components/portal/PortalShell";
 import { PasswordGate } from "@/components/portal/PasswordGate";
 import { ProjectList } from "@/components/portal/ProjectList";
@@ -68,6 +69,8 @@ export default async function PortalPage({
       id: f.id,
       name: f.name,
       size: formatBytes(f.size),
+      preview: previewKind(f.mimeType),
+      nativeImage: isNativeImage(f.mimeType),
     })),
   }));
 

@@ -129,13 +129,14 @@ export default async function ClientDetailPage({
         </section>
 
         <section className="space-y-4">
-          <h2 className="slug">Download log · last 100</h2>
+          <h2 className="slug">Activity log · last 100</h2>
           {downloads.length === 0 ? (
-            <EmptyState title="No downloads from this portal yet." />
+            <EmptyState title="No activity from this portal yet." />
           ) : (
             <Table>
               <THead>
                 <Th>File</Th>
+                <Th>Type</Th>
                 <Th>When</Th>
                 <Th>IP</Th>
                 <Th>User agent</Th>
@@ -144,6 +145,7 @@ export default async function ClientDetailPage({
                 {downloads.map((event) => (
                   <Tr key={event.id}>
                     <Td className="text-fg">{event.file.name}</Td>
+                    <Td className="font-mono text-fg-muted">{event.kind}</Td>
                     <Td className="whitespace-nowrap font-mono text-fg-muted">
                       {formatDateTime(event.downloadedAt)}
                     </Td>

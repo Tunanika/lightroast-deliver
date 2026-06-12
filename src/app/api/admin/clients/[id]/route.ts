@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/session";
 import { isValidSlug } from "@/lib/slug";
+import { deleteThumbsFor } from "@/lib/thumbs";
 
 export const runtime = "nodejs";
 
@@ -98,7 +99,13 @@ export async function DELETE(
     return NextResponse.json({ error: "Client not found." }, { status: 404 });
   }
 
+  const files = await prisma.file.findMany({
+    where: { project: { clientId: id } },
+    select: { id: true },
+  });
+
   // Cascade removes projects, files, and download events for this client.
   await prisma.client.delete({ where: { id } });
+  await deleteThumbsFor(files.map((f) => f.id));
   return NextResponse.json({ ok: true });
 }

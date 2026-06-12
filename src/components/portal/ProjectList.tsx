@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { PreviewLightbox, type PreviewFile } from "./PreviewLightbox";
 
-interface FileItem {
-  id: string;
-  name: string;
+interface FileItem extends PreviewFile {
   size: string;
 }
 
@@ -21,6 +20,8 @@ export function ProjectList({
   slug: string;
   projects: ProjectItem[];
 }) {
+  const [previewFile, setPreviewFile] = useState<FileItem | null>(null);
+
   const hasFiles = projects.some((p) => p.files.length > 0);
   if (projects.length === 0 || !hasFiles) {
     return (
@@ -38,8 +39,16 @@ export function ProjectList({
           project={project}
           slug={slug}
           defaultOpen={i === 0}
+          onPreview={setPreviewFile}
         />
       ))}
+      {previewFile ? (
+        <PreviewLightbox
+          slug={slug}
+          file={previewFile}
+          onClose={() => setPreviewFile(null)}
+        />
+      ) : null}
     </div>
   );
 }
@@ -48,10 +57,12 @@ function ProjectRow({
   project,
   slug,
   defaultOpen,
+  onPreview,
 }: {
   project: ProjectItem;
   slug: string;
   defaultOpen: boolean;
+  onPreview: (file: FileItem) => void;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const count = project.files.length;
@@ -83,7 +94,7 @@ function ProjectRow({
       {open ? (
         <ul className="animate-fade-up pb-3">
           {project.files.map((file) => (
-            <FileRow key={file.id} file={file} slug={slug} />
+            <FileRow key={file.id} file={file} slug={slug} onPreview={onPreview} />
           ))}
           {count === 0 ? (
             <li className="border-t border-border py-4 text-sm text-fg-muted">
@@ -96,19 +107,67 @@ function ProjectRow({
   );
 }
 
-function FileRow({ file, slug }: { file: FileItem; slug: string }) {
+function FileRow({
+  file,
+  slug,
+  onPreview,
+}: {
+  file: FileItem;
+  slug: string;
+  onPreview: (file: FileItem) => void;
+}) {
+  const [thumbBroken, setThumbBroken] = useState(false);
+  const portal = encodeURIComponent(slug);
+
   return (
     <li className="flex items-center justify-between gap-4 border-t border-border py-4">
-      <div className="min-w-0">
-        <p className="truncate text-fg">{file.name}</p>
-        <p className="mt-0.5 font-mono text-xs text-fg-subtle">{file.size}</p>
+      <div className="flex min-w-0 items-center gap-4">
+        {file.preview === "image" && !thumbBroken ? (
+          <button
+            onClick={() => onPreview(file)}
+            aria-label={`Preview ${file.name}`}
+            className="shrink-0"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={`/api/thumb/${file.id}?portal=${portal}`}
+              alt=""
+              loading="lazy"
+              onError={() => setThumbBroken(true)}
+              className="h-12 w-12 border border-border object-cover"
+            />
+          </button>
+        ) : null}
+        <div className="min-w-0">
+          <p className="truncate text-fg">{file.name}</p>
+          <p className="mt-0.5 font-mono text-xs text-fg-subtle">{file.size}</p>
+        </div>
       </div>
-      <a
-        href={`/api/download/${file.id}?portal=${encodeURIComponent(slug)}`}
-        className="inline-flex h-9 shrink-0 items-center bg-accent px-4 text-sm font-medium tracking-heading text-accent-fg transition-opacity duration-200 hover:opacity-90"
-      >
-        Download
-      </a>
+      <div className="flex shrink-0 items-center gap-2">
+        {file.preview === "pdf" ? (
+          <a
+            href={`/api/download/${file.id}?portal=${portal}&inline=1`}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex h-9 items-center border border-border-strong px-3 text-sm tracking-heading text-fg transition-colors hover:bg-bg-soft"
+          >
+            View
+          </a>
+        ) : file.preview && !(file.preview === "image" && thumbBroken) ? (
+          <button
+            onClick={() => onPreview(file)}
+            className="inline-flex h-9 items-center border border-border-strong px-3 text-sm tracking-heading text-fg transition-colors hover:bg-bg-soft"
+          >
+            Preview
+          </button>
+        ) : null}
+        <a
+          href={`/api/download/${file.id}?portal=${portal}`}
+          className="inline-flex h-9 items-center bg-accent px-4 text-sm font-medium tracking-heading text-accent-fg transition-opacity duration-200 hover:opacity-90"
+        >
+          Download
+        </a>
+      </div>
     </li>
   );
 }

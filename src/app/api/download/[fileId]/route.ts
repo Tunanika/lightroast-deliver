@@ -3,17 +3,18 @@ import fs from "node:fs";
 import { Readable } from "node:stream";
 import { prisma } from "@/lib/prisma";
 import { resolveNasPath } from "@/lib/paths";
-import { isPortalUnlocked } from "@/lib/portal-session";
+import { loadPortalFile } from "@/lib/portal-file";
 import { getClientIp } from "@/lib/client-ip";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function contentDisposition(name: string): string {
+function contentDisposition(name: string, inline: boolean): string {
   // HTTP headers are latin1 — the plain filename must be ASCII-only.
   // filename* carries the full UTF-8 name (em dashes, accents, etc.).
   const ascii = name.replace(/[^\x20-\x7E]/g, "_").replace(/["\\]/g, "_");
-  return `attachment; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(name)}`;
+  const type = inline ? "inline" : "attachment";
+  return `${type}; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(name)}`;
 }
 
 export async function GET(
@@ -22,35 +23,14 @@ export async function GET(
 ) {
   const { fileId } = await params;
   const portal = req.nextUrl.searchParams.get("portal");
-  if (!portal) {
-    return new Response("Missing portal.", { status: 400 });
-  }
+  // Inline mode powers in-browser previews: same bytes and access rules, but
+  // rendered instead of saved, and never logged as a download.
+  const inline = req.nextUrl.searchParams.get("inline") === "1";
 
-  // Load the file with its owning client.
-  const file = await prisma.file.findUnique({
-    where: { id: fileId },
-    include: { project: { include: { client: true } } },
-  });
-  if (!file) {
-    return new Response("Not found.", { status: 404 });
-  }
-
+  const access = await loadPortalFile(fileId, portal);
+  if (!access.ok) return access.response;
+  const file = access.file;
   const client = file.project.client;
-
-  // Cross-portal guard: the file must belong to the requesting portal's client.
-  if (client.slug !== portal) {
-    return new Response("Not found.", { status: 404 });
-  }
-
-  // Disabled portals serve nothing.
-  if (!client.accessEnabled) {
-    return new Response("This portal is unavailable.", { status: 403 });
-  }
-
-  // Password-protected portals require a valid unlock session.
-  if (client.password && !(await isPortalUnlocked(client.slug, client.password))) {
-    return new Response("This portal is locked.", { status: 403 });
-  }
 
   // Re-validate the path stays inside the NAS mount and still exists.
   const resolved = resolveNasPath(file.path);
@@ -112,15 +92,16 @@ export async function GET(
 
   const chunkSize = end - start + 1;
 
-  // --- Log one DownloadEvent per download. A Range request that starts at
-  // byte 0 (or no Range at all) marks the start of a fresh download; later
-  // range chunks from video scrubbing/resume start at >0 and are not logged.
+  // --- Log one event per download/preview. A Range request that starts at
+  // byte 0 (or no Range at all) marks a fresh fetch; later range chunks from
+  // video scrubbing/resume start at >0 and are not logged.
   if (!rangeHeader || start === 0) {
     try {
       await prisma.downloadEvent.create({
         data: {
           fileId: file.id,
           clientSlug: client.slug,
+          kind: inline ? "preview" : "download",
           ip: getClientIp(req.headers),
           userAgent: req.headers.get("user-agent") ?? "unknown",
         },
@@ -137,7 +118,7 @@ export async function GET(
     "Content-Type": file.mimeType || "application/octet-stream",
     "Content-Length": String(chunkSize),
     "Accept-Ranges": "bytes",
-    "Content-Disposition": contentDisposition(file.name),
+    "Content-Disposition": contentDisposition(file.name, inline),
     "Cache-Control": "private, no-store",
     "X-Content-Type-Options": "nosniff",
   });

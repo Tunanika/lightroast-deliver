@@ -12,8 +12,9 @@ studio-specific. Bring your own domain, credentials, and media mount.
 - Admin panel for managing clients, projects, and files
 - A portal per client at `/c/<slug>`, optionally password-protected
 - Per-client access toggle to cut off a portal without deleting it
+- In-browser previews: image thumbnails and lightbox, video/audio players, PDFs
 - "Download all" streams a zip of a whole project on the fly (no compression, large video stays fast)
-- Download log with timestamp, IP, and user agent
+- Activity log — downloads and previews, with timestamp, IP, and user agent
 - Dark/light portal theme
 
 **Stack:** Next.js 15 (App Router) · React 19 · TypeScript · Prisma + SQLite · Tailwind ·
@@ -117,6 +118,8 @@ Everything is read from `.env`. The app refuses to start if a required variable 
 | `COOKIE_SECURE`     | ✓ | `true` behind HTTPS, `false` for plain-HTTP LAN. |
 | `TUNNEL_TOKEN`      |   | Cloudflare Tunnel token, only needed by the `cloudflared` service. |
 | `PUBLIC_PORTAL_URL` |   | Public base URL for copied portal links. Unset, links use the current origin. |
+| `THUMB_CACHE_DIR`   |   | Where preview thumbnails are cached. Default `./data/thumbs`. |
+| `THUMB_CACHE_MAX_MB`|   | Thumbnail cache size cap, evicted oldest-first. Default `512`. |
 
 ## How file paths work
 
@@ -138,5 +141,12 @@ inside the mount before it's stored.
 - Refuses to boot without a valid `JWT_SECRET`
 
 A few trade-offs worth knowing: download counts ignore `Range` requests past byte 0 (video
-scrubbing doesn't inflate them), and deleting a file or client cascades to its download history.
-The actual files on the NAS are never touched.
+scrubbing doesn't inflate them), previews are logged as their own event type so they never skew
+download counts, and deleting a file or client cascades to its download history. The actual
+files on the NAS are never touched.
+
+Previews never transcode: video gets a player only in browser-playable formats (MP4/WebM) —
+ProRes and friends stay download-only. Image thumbnails are generated on demand into a
+size-capped cache with oldest-first eviction, and are deleted together with their file, project,
+or client, so nothing derived outlives its source. HEIC thumbnails depend on the libvips build
+sharp ships with; when unavailable they quietly fall back to download-only.

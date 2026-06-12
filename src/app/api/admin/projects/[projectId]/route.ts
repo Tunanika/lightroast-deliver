@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAdminSession } from "@/lib/session";
+import { deleteThumbsFor } from "@/lib/thumbs";
 
 export const runtime = "nodejs";
 
@@ -51,7 +52,13 @@ export async function DELETE(
     return NextResponse.json({ error: "Project not found." }, { status: 404 });
   }
 
+  const files = await prisma.file.findMany({
+    where: { projectId },
+    select: { id: true },
+  });
+
   // Cascade removes files and their download events.
   await prisma.project.delete({ where: { id: projectId } });
+  await deleteThumbsFor(files.map((f) => f.id));
   return NextResponse.json({ ok: true });
 }

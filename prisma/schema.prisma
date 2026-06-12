@@ -59,6 +59,8 @@ model DownloadEvent {
   id           String   @id @default(cuid())
   fileId       String
   clientSlug   String // which portal triggered the download
+  // "download" or "preview" — previews are in-browser views, not saves.
+  kind         String   @default("download")
   ip           String
   userAgent    String
   downloadedAt DateTime @default(now())
