@@ -1,7 +1,10 @@
-import { cookies } from "next/headers";
+import type { Metadata } from "next";
+import { cookies, headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { env } from "@/lib/env";
 import { isPortalUnlocked } from "@/lib/portal-session";
+import { logPageView } from "@/lib/analytics";
 import { formatBytes } from "@/lib/format";
 import { previewKind, isNativeImage } from "@/lib/preview";
 import { PortalShell } from "@/components/portal/PortalShell";
@@ -9,6 +12,44 @@ import { PasswordGate } from "@/components/portal/PasswordGate";
 import { ProjectList } from "@/components/portal/ProjectList";
 
 export const dynamic = "force-dynamic";
+
+// Link previews (WhatsApp, Instagram, iMessage…) show the client's name
+// instead of an empty card. File names are never exposed here.
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const client = await prisma.client.findUnique({
+    where: { slug },
+    select: { name: true, accessEnabled: true },
+  });
+
+  const base = env.publicPortalUrl;
+  const title =
+    client && client.accessEnabled
+      ? `${client.name} — LightRoast Deliver`
+      : "LightRoast Deliver";
+  const description =
+    client && client.accessEnabled
+      ? `Delivery for ${client.name}. Your files, ready to download.`
+      : "Private file delivery.";
+
+  return {
+    title,
+    description,
+    ...(base ? { metadataBase: new URL(base) } : {}),
+    openGraph: {
+      title,
+      description,
+      siteName: "LightRoast Deliver",
+      type: "website",
+      url: `/c/${slug}`,
+    },
+    twitter: { card: "summary_large_image", title, description },
+  };
+}
 
 export default async function PortalPage({
   params,
@@ -27,6 +68,8 @@ export default async function PortalPage({
     },
   });
   if (!client) notFound();
+
+  await logPageView(client.slug, await headers());
 
   const store = await cookies();
   const surface =

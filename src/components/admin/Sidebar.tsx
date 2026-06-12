@@ -7,6 +7,7 @@ import { Wordmark } from "@/components/Wordmark";
 const nav = [
   { href: "/admin", label: "Dashboard" },
   { href: "/admin/clients", label: "Clients" },
+  { href: "/admin/analytics", label: "Analytics" },
   { href: "/admin/logs", label: "Logs" },
 ];
 

@@ -15,6 +15,8 @@ studio-specific. Bring your own domain, credentials, and media mount.
 - In-browser previews: image thumbnails and lightbox, video/audio players, PDFs
 - "Download all" streams a zip of a whole project on the fly (no compression, large video stays fast)
 - Activity log — downloads and previews, with timestamp, IP, and user agent
+- Portal analytics — views, unique visitors, devices, browsers, countries, referrers
+- Link previews — shared portal links unfurl with the client's name (Open Graph)
 - Dark/light portal theme
 
 **Stack:** Next.js 15 (App Router) · React 19 · TypeScript · Prisma + SQLite · Tailwind ·
@@ -120,6 +122,7 @@ Everything is read from `.env`. The app refuses to start if a required variable 
 | `PUBLIC_PORTAL_URL` |   | Public base URL for copied portal links. Unset, links use the current origin. |
 | `THUMB_CACHE_DIR`   |   | Where preview thumbnails are cached. Default `./data/thumbs`. |
 | `THUMB_CACHE_MAX_MB`|   | Thumbnail cache size cap, evicted oldest-first. Default `512`. |
+| `ANALYTICS_RETENTION_DAYS` | | Page views older than this are pruned. Default `365`. |
 
 ## How file paths work
 

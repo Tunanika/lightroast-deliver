@@ -55,6 +55,28 @@ model File {
   @@index([projectId])
 }
 
+model PageView {
+  id         String   @id @default(cuid())
+  clientSlug String // which portal was viewed
+  // Daily-rotating hash of ip+ua — counts unique visitors without storing a
+  // cross-day identifier.
+  visitorId  String
+  ip         String
+  country    String? // from cf-ipcountry when behind Cloudflare
+  referrer   String?
+  device     String // desktop | mobile | tablet
+  browser    String?
+  os         String?
+  userAgent  String
+  // Link-preview crawlers (WhatsApp, Instagram…) and bots: logged but
+  // excluded from analytics.
+  isBot      Boolean  @default(false)
+  viewedAt   DateTime @default(now())
+
+  @@index([clientSlug])
+  @@index([viewedAt])
+}
+
 model DownloadEvent {
   id           String   @id @default(cuid())
   fileId       String
