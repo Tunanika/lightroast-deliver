@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { env } from "@/lib/env";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { EditClientForm } from "@/components/admin/EditClientForm";
 import { NewProjectForm } from "@/components/admin/NewProjectForm";
@@ -37,6 +38,9 @@ export default async function ClientDetailPage({
   });
 
   const portalPath = `/c/${client.slug}`;
+  const portalUrl = env.publicPortalUrl
+    ? `${env.publicPortalUrl}${portalPath}`
+    : undefined;
 
   return (
     <>
@@ -46,7 +50,7 @@ export default async function ClientDetailPage({
         description={<span className="font-mono">{portalPath}</span>}
         actions={
           <>
-            <CopyButton path={portalPath} />
+            <CopyButton value={portalUrl} path={portalUrl ? undefined : portalPath} />
             <a href={portalPath} target="_blank" rel="noreferrer">
               <Button variant="ghost">Open portal</Button>
             </a>

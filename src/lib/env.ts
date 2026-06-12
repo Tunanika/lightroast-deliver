@@ -48,4 +48,14 @@ export const env = {
   get cookieSecure(): boolean {
     return process.env.COOKIE_SECURE === "true";
   },
+  /**
+   * Public base URL for client portal links (e.g. https://deliver.lightroast.studio).
+   * Used when copying portal links so they point at the public hostname even
+   * when the admin panel is accessed via localhost/Tailscale. Optional —
+   * falls back to the browser origin when unset.
+   */
+  get publicPortalUrl(): string | undefined {
+    const url = process.env.PUBLIC_PORTAL_URL;
+    return url ? url.replace(/\/+$/, "") : undefined;
+  },
 };

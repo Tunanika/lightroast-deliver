@@ -150,6 +150,7 @@ is missing.
 | `DATABASE_URL`   | ✓ | compose | SQLite file URL. Fixed at `file:/data/db.sqlite` (the `./data` volume). |
 | `COOKIE_SECURE`  | ✓ | you | `true` marks cookies Secure (HTTPS) — use behind the tunnel. `false` for LAN HTTP. |
 | `TUNNEL_TOKEN`   | tunnel only | you | Cloudflare Tunnel token, consumed by the `cloudflared` service. |
+| `PUBLIC_PORTAL_URL` | — | you | Public base URL for copied portal links (e.g. `https://deliver.lightroast.studio`). Unset → links use the origin the admin panel is open on. |
 | `PORT` / `HOSTNAME` | — | image | Default `3000` / `0.0.0.0`. Override only if you change the port mapping. |
 
 `NAS_MOUNT_PATH` and `DATABASE_URL` are hard-set in `docker-compose.yml`, so a **Docker `.env` only
