@@ -7,8 +7,11 @@ export interface ParsedUa {
   isBot: boolean;
 }
 
+// Link-preview crawlers and automated agents — NOT in-app browsers. A real
+// person tapping a link inside Instagram/Facebook has "Instagram"/"FBAV" in
+// their UA but is a genuine visitor, so those app names must not appear here.
 const BOT_RE =
-  /bot|crawl|spider|slurp|facebookexternalhit|whatsapp|instagram|telegram|twitterbot|linkedinbot|discordbot|slackbot|skypeuripreview|pinterest|vkshare|preview|headless|curl|wget/i;
+  /bot\b|crawler|spider|slurp|facebookexternalhit|whatsapp\/|telegrambot|twitterbot|linkedinbot|discordbot|slackbot|skypeuripreview|pinterest|vkshare|google-inspectiontool|headless|curl\/|wget\//i;
 
 export function parseUa(ua: string): ParsedUa {
   if (!ua) return { device: "desktop", browser: null, os: null, isBot: false };

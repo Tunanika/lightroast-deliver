@@ -42,7 +42,14 @@ export async function GET(
     });
   }
 
-  const stat = fs.statSync(thumb.path);
+  // The rendition can be evicted (or its file deleted) between getThumb and
+  // here — fall through cleanly rather than throwing a 500.
+  let stat: fs.Stats;
+  try {
+    stat = fs.statSync(thumb.path);
+  } catch {
+    return new Response("Preview unavailable.", { status: 415 });
+  }
   const nodeStream = fs.createReadStream(thumb.path);
   const webStream = Readable.toWeb(nodeStream) as unknown as ReadableStream;
 

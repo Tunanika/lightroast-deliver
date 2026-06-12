@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cache } from "react";
 import { cookies, headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -13,6 +14,38 @@ import { ProjectList } from "@/components/portal/ProjectList";
 
 export const dynamic = "force-dynamic";
 
+// One DB hit per request: generateMetadata and the page body share this via
+// React's request-scoped cache.
+const loadPortalClient = cache((slug: string) =>
+  prisma.client.findUnique({
+    where: { slug },
+    include: {
+      projects: {
+        orderBy: { createdAt: "asc" },
+        include: { files: { orderBy: { createdAt: "asc" } } },
+      },
+    },
+  }),
+);
+
+/**
+ * Absolute base for Open Graph URLs. Prefers PUBLIC_PORTAL_URL; otherwise
+ * derives it from the request host so link previews still resolve their image
+ * when the env var isn't set.
+ */
+async function publicBase(): Promise<URL | undefined> {
+  if (env.publicPortalUrl) return new URL(env.publicPortalUrl);
+  const h = await headers();
+  const host = h.get("host");
+  if (!host) return undefined;
+  const proto = h.get("x-forwarded-proto") ?? "https";
+  try {
+    return new URL(`${proto}://${host}`);
+  } catch {
+    return undefined;
+  }
+}
+
 // Link previews (WhatsApp, Instagram, iMessage…) show the client's name
 // instead of an empty card. File names are never exposed here.
 export async function generateMetadata({
@@ -21,12 +54,9 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const client = await prisma.client.findUnique({
-    where: { slug },
-    select: { name: true, accessEnabled: true },
-  });
+  const client = await loadPortalClient(slug);
+  const base = await publicBase();
 
-  const base = env.publicPortalUrl;
   const title =
     client && client.accessEnabled
       ? `${client.name} — LightRoast Deliver`
@@ -39,7 +69,7 @@ export async function generateMetadata({
   return {
     title,
     description,
-    ...(base ? { metadataBase: new URL(base) } : {}),
+    ...(base ? { metadataBase: base } : {}),
     openGraph: {
       title,
       description,
@@ -58,18 +88,8 @@ export default async function PortalPage({
 }) {
   const { slug } = await params;
 
-  const client = await prisma.client.findUnique({
-    where: { slug },
-    include: {
-      projects: {
-        orderBy: { createdAt: "asc" },
-        include: { files: { orderBy: { createdAt: "asc" } } },
-      },
-    },
-  });
+  const client = await loadPortalClient(slug);
   if (!client) notFound();
-
-  await logPageView(client.slug, await headers());
 
   const store = await cookies();
   const surface =
@@ -102,6 +122,10 @@ export default async function PortalPage({
       </PortalShell>
     );
   }
+
+  // Log the view only once the visitor reaches the actual delivery — past the
+  // disabled and locked gates — so a single human visit is one page view.
+  await logPageView(client.slug, await headers());
 
   // Pre-format sizes so the client component receives plain serializable data
   // (BigInt cannot cross the server/client boundary).
