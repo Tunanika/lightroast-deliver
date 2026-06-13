@@ -14,6 +14,25 @@ import { parseUa } from "@/lib/ua";
 const PRUNE_INTERVAL_MS = 60 * 60 * 1000;
 let lastPrune = 0;
 
+// Per-visitor write throttle: collapses refresh bursts and bounds how fast a
+// single identity can grow the table (disk-fill defense). Distributed floods
+// across rotating IP/UA aren't stopped here — retention pruning bounds those.
+const THROTTLE_MS = 30 * 1000;
+const recent = new Map<string, number>();
+
+function throttled(key: string, now: number): boolean {
+  const last = recent.get(key);
+  if (last && now - last < THROTTLE_MS) return true;
+  // Opportunistically drop stale entries so the map can't grow unbounded.
+  if (recent.size > 5000) {
+    for (const [k, at] of recent) {
+      if (now - at >= THROTTLE_MS) recent.delete(k);
+    }
+  }
+  recent.set(key, now);
+  return false;
+}
+
 function retentionDays(): number {
   const days = Number(process.env.ANALYTICS_RETENTION_DAYS);
   return Number.isFinite(days) && days > 0 ? days : 365;
@@ -36,11 +55,14 @@ export async function logPageView(
     const ip = getClientIp(headers);
     const parsed = parseUa(ua);
     const referrer = headers.get("referer");
+    const vid = visitorId(ip, ua);
+
+    if (throttled(`${vid}:${clientSlug}`, Date.now())) return;
 
     await prisma.pageView.create({
       data: {
         clientSlug,
-        visitorId: visitorId(ip, ua),
+        visitorId: vid,
         ip,
         country: headers.get("cf-ipcountry"),
         referrer: referrer ? referrer.slice(0, 500) : null,

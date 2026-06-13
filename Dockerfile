@@ -4,7 +4,8 @@
 # Node provides the proven runtime for Next standalone + Prisma; bun is the
 # package manager / script runner. Both are musl (Alpine) compatible.
 FROM node:20-alpine AS base
-RUN apk add --no-cache libc6-compat openssl
+# Patch OS packages to the latest Alpine security level, then add runtime deps.
+RUN apk upgrade --no-cache && apk add --no-cache libc6-compat openssl
 COPY --from=oven/bun:1-alpine /usr/local/bin/bun /usr/local/bin/bun
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1

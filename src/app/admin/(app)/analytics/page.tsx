@@ -1,9 +1,13 @@
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/admin/PageHeader";
+import { AnalyticsFilter } from "@/components/admin/AnalyticsFilter";
 import { Stat, EmptyState } from "@/components/ui";
 import { Table, THead, Th, Tr, Td } from "@/components/admin/Table";
+import { resolveAnalytics } from "@/lib/analytics-filter";
 
-const DAYS = 30;
+const DAY_MS = 24 * 60 * 60 * 1000;
+// Cap chart bars so a multi-year range can't render thousands of rects.
+const MAX_BARS = 180;
 
 function dayKey(date: Date): string {
   return date.toISOString().slice(0, 10);
@@ -19,13 +23,31 @@ function topOf(
     .slice(0, limit);
 }
 
-export default async function AnalyticsPage() {
-  const since = new Date(Date.now() - DAYS * 24 * 60 * 60 * 1000);
-  const where = { isBot: false, viewedAt: { gte: since } };
+export default async function AnalyticsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    clientSlug?: string;
+    device?: string;
+    from?: string;
+    to?: string;
+  }>;
+}) {
+  const sp = await searchParams;
+  const { start, end, where } = resolveAnalytics({
+    clientSlug: sp.clientSlug,
+    device: sp.device,
+    from: sp.from,
+    to: sp.to,
+  });
 
-  const [views, botViews] = await Promise.all([
+  const [clients, views, botViews] = await Promise.all([
+    prisma.client.findMany({
+      orderBy: { name: "asc" },
+      select: { slug: true, name: true },
+    }),
     prisma.pageView.findMany({
-      where,
+      where: { ...where, isBot: false },
       select: {
         visitorId: true,
         clientSlug: true,
@@ -37,17 +59,17 @@ export default async function AnalyticsPage() {
         viewedAt: true,
       },
     }),
-    prisma.pageView.count({
-      where: { isBot: true, viewedAt: { gte: since } },
-    }),
+    prisma.pageView.count({ where: { ...where, isBot: true } }),
   ]);
 
   const visitors = new Set(views.map((v) => v.visitorId)).size;
 
-  // Daily buckets, oldest → newest, including empty days.
+  // Daily buckets across the selected window (capped), including empty days.
+  const span = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / DAY_MS));
+  const dayCount = Math.min(span, MAX_BARS);
   const byDay = new Map<string, number>();
-  for (let i = DAYS - 1; i >= 0; i--) {
-    byDay.set(dayKey(new Date(Date.now() - i * 24 * 60 * 60 * 1000)), 0);
+  for (let i = dayCount - 1; i >= 0; i--) {
+    byDay.set(dayKey(new Date(end.getTime() - i * DAY_MS)), 0);
   }
   for (const v of views) {
     const key = dayKey(v.viewedAt);
@@ -83,11 +105,21 @@ export default async function AnalyticsPage() {
   return (
     <>
       <PageHeader
-        slug={`(LR.s — Analytics · last ${DAYS} days)`}
+        slug={`(LR.s — Analytics · ${dayKey(start)} → ${dayKey(end)})`}
         title="Portal analytics."
       />
 
       <div className="space-y-10 p-8">
+        <AnalyticsFilter
+          clients={clients}
+          initial={{
+            clientSlug: sp.clientSlug ?? "",
+            device: sp.device ?? "",
+            from: sp.from ?? "",
+            to: sp.to ?? "",
+          }}
+        />
+
         <div className="grid grid-cols-1 gap-px border border-border bg-border sm:grid-cols-3">
           <Stat label="Page views" value={views.length} />
           <Stat label="Unique visitors" value={visitors} />
@@ -98,17 +130,17 @@ export default async function AnalyticsPage() {
           <h2 className="slug">Views per day</h2>
           {views.length === 0 ? (
             <EmptyState
-              title="No portal views yet."
+              title="No portal views in this range."
               hint="Views appear when a client opens their portal link."
             />
           ) : (
             <div className="border border-border bg-bg p-6">
               <svg
-                viewBox={`0 0 ${DAYS * 20} 120`}
+                viewBox={`0 0 ${days.length * 20} 120`}
                 className="h-32 w-full text-accent"
                 preserveAspectRatio="none"
                 role="img"
-                aria-label={`Daily portal views, last ${DAYS} days`}
+                aria-label="Daily portal views"
               >
                 {days.map(([key, n], i) => (
                   <rect
