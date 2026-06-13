@@ -46,7 +46,7 @@ media under `/tmp/lr-nas-test`.
    ```yaml
    volumes:
      - ./data:/data
-     - /volume1/media:/mnt/nas:ro    # <- your media path here
+     - /volume1/media:/mnt/nas:ro # <- your media path here
    ```
 
 3. `docker compose up --build -d`
@@ -110,19 +110,19 @@ host you're administering from.
 
 Everything is read from `.env`. The app refuses to start if a required variable is missing.
 
-| Variable            | Required | Purpose |
-| ------------------- | :------: | ------- |
-| `ADMIN_USERNAME`    | ✓ | Admin login username. |
-| `ADMIN_PASSWORD`    | ✓ | Admin login password (never stored in the DB). |
-| `JWT_SECRET`        | ✓ | Signs the admin session JWT. Min 32 chars. |
-| `NAS_MOUNT_PATH`    | ✓ | Media mount point inside the container. Fixed at `/mnt/nas` by compose. |
-| `DATABASE_URL`      | ✓ | SQLite file URL. Fixed at `file:/data/db.sqlite` by compose. |
-| `COOKIE_SECURE`     | ✓ | `true` behind HTTPS, `false` for plain-HTTP LAN. |
-| `TUNNEL_TOKEN`      |   | Cloudflare Tunnel token, only needed by the `cloudflared` service. |
-| `PUBLIC_PORTAL_URL` |   | Public base URL for copied portal links. Unset, links use the current origin. |
-| `THUMB_CACHE_DIR`   |   | Where preview thumbnails are cached. Default `./data/thumbs`. |
-| `THUMB_CACHE_MAX_MB`|   | Thumbnail cache size cap, evicted oldest-first. Default `512`. |
-| `ANALYTICS_RETENTION_DAYS` | | Page views older than this are pruned. Default `365`. |
+| Variable                   | Required | Purpose                                                                       |
+| -------------------------- | :------: | ----------------------------------------------------------------------------- |
+| `ADMIN_USERNAME`           |    ✓     | Admin login username.                                                         |
+| `ADMIN_PASSWORD`           |    ✓     | Admin login password (never stored in the DB).                                |
+| `JWT_SECRET`               |    ✓     | Signs the admin session JWT. Min 32 chars.                                    |
+| `NAS_MOUNT_PATH`           |    ✓     | Media mount point inside the container. Fixed at `/mnt/nas` by compose.       |
+| `DATABASE_URL`             |    ✓     | SQLite file URL. Fixed at `file:/data/db.sqlite` by compose.                  |
+| `COOKIE_SECURE`            |    ✓     | `true` behind HTTPS, `false` for plain-HTTP LAN.                              |
+| `TUNNEL_TOKEN`             |          | Cloudflare Tunnel token, only needed by the `cloudflared` service.            |
+| `PUBLIC_PORTAL_URL`        |          | Public base URL for copied portal links. Unset, links use the current origin. |
+| `THUMB_CACHE_DIR`          |          | Where preview thumbnails are cached. Default `./data/thumbs`.                 |
+| `THUMB_CACHE_MAX_MB`       |          | Thumbnail cache size cap, evicted oldest-first. Default `512`.                |
+| `ANALYTICS_RETENTION_DAYS` |          | Page views older than this are pruned. Default `365`.                         |
 
 ## How file paths work
 
