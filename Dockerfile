@@ -47,6 +47,10 @@ COPY --from=builder --chown=node:node /app/.next/static ./.next/static
 # The generated Prisma client engine for the app (standalone tracing can miss it).
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
+# sharp's native musl binary is not traced by Next.js standalone output.
+COPY --from=builder /app/node_modules/sharp ./node_modules/sharp
+COPY --from=builder /app/node_modules/@img ./node_modules/@img
+
 # Schema + committed migrations, and the isolated Prisma CLI for migrate deploy.
 COPY --from=builder /app/prisma ./prisma
 COPY --from=migrator /m/node_modules ./.migrate/node_modules
